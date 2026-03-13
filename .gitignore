@@ -1,0 +1,24 @@
+# Backend
+backend/__pycache__/
+backend/*.py[cod]
+backend/*$py.class
+backend/.venv/
+backend/venv/
+backend/ENV/
+backend/env/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local
+frontend/build_*.txt
+
+# Logs
+*.log
+frontend/build_log.txt
+frontend/build_error.txt
+
+# OS
+.DS_Store
+Thumbs.db
