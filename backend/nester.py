@@ -7,7 +7,7 @@ from shapely.ops import unary_union
 import random
 
 class PolygonNester:
-    def __init__(self, fabric_width, fabric_height, gap=2, boundary_poly=None):
+    def __init__(self, fabric_width, fabric_height, gap=0.2, boundary_poly=None):
         self.width = fabric_width
         self.height = fabric_height
         self.gap = gap
@@ -343,7 +343,7 @@ class PolygonNester:
             print(f"Error calculating leftover: {e}")
             return []
 
-def optimize_layout(cloth_width, cloth_height, shapes, gap=2, boundary_points=None):
+def optimize_layout(cloth_width, cloth_height, shapes, gap=0.2, boundary_points=None):
     if not shapes:
         return {"results": [], "best_index": -1}
         
