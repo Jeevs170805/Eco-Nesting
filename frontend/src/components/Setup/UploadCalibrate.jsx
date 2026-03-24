@@ -10,10 +10,18 @@ const UploadCalibrate = ({ clothConfig, onNext, setShapes: setGlobalShapes }) =>
     const [detectedShapes, setDetectedShapes] = useState([]);
     const [savedPieces, setSavedPieces] = useState([]);
 
+    const SIZE_SCALES = {
+        'S': { scale: 1.00, w: 65, h: 90 },
+        'M': { scale: 1.08, w: 70.2, h: 97.2 },
+        'L': { scale: 1.16, w: 75.4, h: 104.4 },
+        'XL': { scale: 1.24, w: 80.6, h: 111.6 },
+        'XXL': { scale: 1.32, w: 85.8, h: 118.8 }
+    };
+
     // Automated Calibration State
-    const [imgWidthCm, setImgWidthCm] = useState(100);
-    const [imgHeightCm, setImgHeightCm] = useState(150);
     const [selectedSize, setSelectedSize] = useState('M');
+    const [imgWidthCm, setImgWidthCm] = useState(SIZE_SCALES['M'].w);
+    const [imgHeightCm, setImgHeightCm] = useState(SIZE_SCALES['M'].h);
     
     // Manual Calibration Fallback State
     const [measurements, setMeasurements] = useState([]);
@@ -309,7 +317,11 @@ const UploadCalibrate = ({ clothConfig, onNext, setShapes: setGlobalShapes }) =>
                                 {['S', 'M', 'L', 'XL', 'XXL'].map(size => (
                                     <button
                                         key={size}
-                                        onClick={() => setSelectedSize(size)}
+                                        onClick={() => {
+                                            setSelectedSize(size);
+                                            setImgWidthCm(SIZE_SCALES[size].w);
+                                            setImgHeightCm(SIZE_SCALES[size].h);
+                                        }}
                                         className={`flex-1 py-1.5 text-[10px] font-black rounded-xl transition-all ${
                                             selectedSize === size ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'
                                         }`}
