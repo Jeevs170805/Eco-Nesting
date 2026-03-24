@@ -47,8 +47,8 @@ function App() {
             switch (currentStep) {
                 case 1: return <ClothSetup onNext={handleClothSetup} />;
                 case 2: return <UploadCalibrate clothConfig={clothConfig} onNext={handleCalibrationComplete} setShapes={setShapes} />;
-                case 3: return <Optimization clothConfig={clothConfig} shapes={shapes} onNext={() => setStep(4)} setLayout={setLayout} />;
-                case 4: return <Export layout={layout} clothConfig={clothConfig} shapes={shapes} onBack={() => setStep(3)} onHome={() => { setNestingMode(null); setStep(0); }} />;
+                case 3: return <Optimization clothConfig={clothConfig} shapes={shapes} onNext={() => setStep(4)} setLayout={setLayout} nestingMode={nestingMode} />;
+                case 4: return <Export layout={layout} clothConfig={clothConfig} shapes={shapes} onBack={() => setStep(3)} onHome={() => { setNestingMode(null); setStep(0); }} nestingMode={nestingMode} />;
                 default: return <ModeSelection onSelect={handleModeSelect} />;
             }
         } else {
@@ -56,8 +56,8 @@ function App() {
             switch (currentStep) {
                 case 1: return <FabricCalibrate onNext={handleFabricCalibration} />;
                 case 2: return <UploadCalibrate clothConfig={clothConfig} onNext={handleCalibrationComplete} setShapes={setShapes} />;
-                case 3: return <Optimization clothConfig={clothConfig} shapes={shapes} onNext={() => setStep(4)} setLayout={setLayout} />;
-                case 4: return <Export layout={layout} clothConfig={clothConfig} shapes={shapes} onBack={() => setStep(3)} onHome={() => { setNestingMode(null); setStep(0); }} />;
+                case 3: return <Optimization clothConfig={clothConfig} shapes={shapes} onNext={() => setStep(4)} setLayout={setLayout} nestingMode={nestingMode} />;
+                case 4: return <Export layout={layout} clothConfig={clothConfig} shapes={shapes} onBack={() => setStep(3)} onHome={() => { setNestingMode(null); setStep(0); }} nestingMode={nestingMode} />;
                 default: return <ModeSelection onSelect={handleModeSelect} />;
             }
         }
