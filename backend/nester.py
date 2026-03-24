@@ -279,9 +279,8 @@ class PolygonNester:
         used_w = max_x - min_x
         used_h = max_y - min_y
 
-        # Redefine the min-cut as the full fabric area up to the rightmost piece
-        minx_f, miny_f, maxx_f, maxy_f = self.fabric_poly.bounds
-        nest_bbox = Polygon([(minx_f, miny_f), (max_x, miny_f), (max_x, maxy_f), (minx_f, maxy_f)])
+        # Reverting to tight bounding box intersection for minimum area calculation
+        nest_bbox = Polygon([(min_x, min_y), (max_x, min_y), (max_x, max_y), (min_x, max_y)])
         
         # Intersection with fabric polygon gives the true "Used" part
         used_poly = self.fabric_poly.intersection(nest_bbox)
