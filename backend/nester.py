@@ -279,12 +279,26 @@ class PolygonNester:
         used_w = max_x - min_x
         used_h = max_y - min_y
 
-        # Reverting to the standard tight bounding box as requested
-        nest_bbox = Polygon([(min_x, min_y), (max_x, min_y), (max_x, max_y), (min_x, max_y)])
-        
-        # Intersection with fabric polygon gives the true "Used" part
-        used_poly = self.fabric_poly.intersection(nest_bbox)
-        min_cut_area = used_poly.area
+        # Stepped Rectilinear Min-Cut (Top-Left anchored)
+        try:
+            from shapely import box
+            minxf, minyf, maxxf, maxyf = self.fabric_poly.bounds
+            
+            # Each piece contributes a rectangle from the fabric origin (top-left) to its own max_x, max_y
+            rects = []
+            for p in packed:
+                p_bounds = p['poly'].bounds
+                rects.append(box(minxf, minyf, p_bounds[2], p_bounds[3]))
+            
+            # Union of these rectangles creates the "stepped" shape the user wants
+            stepped_poly = unary_union(rects)
+            
+            # Final intersection with fabric boundary to ensure validity
+            used_poly = self.fabric_poly.intersection(stepped_poly)
+        except Exception as e:
+            # Fallback to standard bounding box
+            print(f"Stepped min-cut error, falling back: {e}")
+            used_poly = self.fabric_poly.intersection(Polygon([(min_x, min_y), (max_x, min_y), (max_x, max_y), (min_x, max_y)]))
         
         efficiency = (total_piece_area / min_cut_area * 100) if min_cut_area > 0 else 0
         
