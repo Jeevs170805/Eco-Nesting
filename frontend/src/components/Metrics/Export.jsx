@@ -43,8 +43,8 @@ const Export = ({ layout, clothConfig, shapes, onBack, onHome }) => {
                 y: offsetY + pt[1] * vScale
             }));
             const boundary = new fabric.Polygon(boundaryPoints, {
-                fill: '#020617',
-                stroke: '#10b981',
+                fill: 'transparent',
+                stroke: '#eab308', // Yellow
                 strokeWidth: 2,
                 selectable: false,
                 evented: false
@@ -60,7 +60,20 @@ const Export = ({ layout, clothConfig, shapes, onBack, onHome }) => {
             }));
             canvas.add(new fabric.Polygon(mcPoints, {
                 fill: 'rgba(16, 185, 129, 0.05)',
-                stroke: '#10b981',
+                stroke: '#10b981', // Green
+                strokeWidth: 2,
+                strokeDashArray: [5, 5],
+                selectable: false
+            }));
+        } else if (layout.metrics?.usedWidth) {
+            // Rectangular fallback
+            canvas.add(new fabric.Rect({
+                left: offsetX,
+                top: offsetY,
+                width: layout.metrics.usedWidth * vScale,
+                height: layout.metrics.usedHeight * vScale,
+                fill: 'rgba(16, 185, 129, 0.05)',
+                stroke: '#10b981', // Green
                 strokeWidth: 2,
                 strokeDashArray: [5, 5],
                 selectable: false
