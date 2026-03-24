@@ -153,11 +153,6 @@ const Export = ({ layout, clothConfig, shapes, onBack, onHome }) => {
         setTimeout(() => onHome(), 1000);
     };
 
-    const handlePrint = () => {
-        window.print();
-        // Return to home after printing
-        setTimeout(() => onHome(), 1000);
-    };
 
     return (
         <div className="flex flex-col items-center justify-center min-h-full p-6 bg-slate-950">
@@ -203,9 +198,6 @@ const Export = ({ layout, clothConfig, shapes, onBack, onHome }) => {
                         </h3>
                         <button onClick={handleExportPNG} className="w-full py-3.5 bg-sky-500 hover:bg-sky-400 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-sky-500/20">
                             <Download className="w-5 h-5" /> Download PNG Image
-                        </button>
-                        <button onClick={handlePrint} className="w-full py-3.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all border border-slate-700">
-                            <FileText className="w-5 h-5 text-emerald-400" /> Export as PDF / Print
                         </button>
                         <button onClick={handleExportJSON} className="w-full py-3.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all border border-slate-700">
                             <FileJson className="w-5 h-5 text-amber-400" /> Save as JSON Data

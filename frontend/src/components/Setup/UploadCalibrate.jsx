@@ -410,6 +410,10 @@ const UploadCalibrate = ({ clothConfig, onNext, setShapes: setGlobalShapes }) =>
         }
     };
 
+    const deleteSavedPiece = (id) => {
+        setSavedPieces(savedPieces.filter(p => p.id !== id));
+    };
+
     return (
         <div className="flex h-full bg-slate-950 text-white font-sans overflow-hidden">
             {/* Sidebar */}
@@ -534,11 +538,20 @@ const UploadCalibrate = ({ clothConfig, onNext, setShapes: setGlobalShapes }) =>
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <div className="font-black text-sm">{piece.name}</div>
-                                            <div className="text-[10px] text-emerald-400 font-bold mt-1">
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <div className="text-[10px] text-emerald-400 font-bold">
                                                 {piece.width.toFixed(1)} × {piece.height.toFixed(1)} cm
                                             </div>
+                                            <button 
+                                                onClick={() => deleteSavedPiece(piece.id)}
+                                                className="text-slate-500 hover:text-rose-500 transition-colors"
+                                                title="Delete Piece"
+                                            >
+                                                <Trash2 className="w-3 h-3" />
+                                            </button>
                                         </div>
-                                        <div className="flex items-center bg-slate-950 rounded-lg p-1 border border-slate-700">
+                                    </div>
+                                    <div className="flex items-center bg-slate-950 rounded-lg p-1 border border-slate-700">
                                             <button
                                                 onClick={() => {
                                                     const newPieces = [...savedPieces];
