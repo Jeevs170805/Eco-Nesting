@@ -279,16 +279,11 @@ class PolygonNester:
         used_w = max_x - min_x
         used_h = max_y - min_y
 
-        # Calculate a Rectilinear (Boxy) Min-Cut using the union of piece envelopes
-        try:
-            # Use envelopes to ensure straight horizontal/vertical lines only
-            combined_boxes = unary_union([p['poly'].envelope for p in packed])
-            # Intersection with fabric polygon
-            used_poly = self.fabric_poly.intersection(combined_boxes)
-        except Exception as e:
-            # Fallback to single bounding box
-            print(f"Boxy calculation error, falling back: {e}")
-            used_poly = self.fabric_poly.intersection(Polygon([(min_x, min_y), (max_x, min_y), (max_x, max_y), (min_x, max_y)]))
+        # Reverting to the standard tight bounding box as requested
+        nest_bbox = Polygon([(min_x, min_y), (max_x, min_y), (max_x, max_y), (min_x, max_y)])
+        
+        # Intersection with fabric polygon gives the true "Used" part
+        used_poly = self.fabric_poly.intersection(nest_bbox)
         min_cut_area = used_poly.area
         
         efficiency = (total_piece_area / min_cut_area * 100) if min_cut_area > 0 else 0
