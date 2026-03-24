@@ -14,6 +14,8 @@ const UploadCalibrate = ({ clothConfig, onNext, setShapes: setGlobalShapes }) =>
     const [isAddingMeasurement, setIsAddingMeasurement] = useState(false);
     const isAddingRef = useRef(false);
 
+    const [imgWidthCm, setImgWidthCm] = useState('');
+    const [imgHeightCm, setImgHeightCm] = useState('');
     const [detectedShapes, setDetectedShapes] = useState([]);
     const [savedPieces, setSavedPieces] = useState([]);
 
@@ -307,12 +309,40 @@ const UploadCalibrate = ({ clothConfig, onNext, setShapes: setGlobalShapes }) =>
             console.log("Backend response:", res.data);
 
             if (res.data.shapes && res.data.shapes.length > 0) {
-                console.log(`Detected ${res.data.shapes.length} shapes`);
-                setDetectedShapes(res.data.shapes);
-                setWorkflow('calibration');
-                setCurrentPieceIndex(0);
-                setMeasurements([]);
-                setCurrentMeasurement({ points: [], label: '', realCm: '' });
+                const shapes = res.data.shapes;
+                const imgW = res.data.img_w;
+                const imgH = res.data.img_h;
+
+                // Auto-scaling if global dimensions are provided
+                if (imgWidthCm && imgHeightCm) {
+                    const scaleX = parseFloat(imgWidthCm) / imgW;
+                    const scaleY = parseFloat(imgHeightCm) / imgH;
+
+                    const autoSaved = shapes.map((s, idx) => {
+                        const cmPoints = s.points.map(pt => ({
+                            x: (pt[0] - s.bbox.x) * scaleX,
+                            y: (pt[1] - s.bbox.y) * scaleY
+                        }));
+                        return {
+                            id: `piece_${Date.now()}_${idx}`,
+                            name: `Piece ${idx + 1}`,
+                            cmPoints: cmPoints,
+                            width: s.bbox.w * scaleX,
+                            height: s.bbox.h * scaleY,
+                            measurements: [{ label: 'Auto-Scaled', realCm: `${imgWidthCm}x${imgHeightCm} Frame` }],
+                            quantity: 1
+                        };
+                    });
+
+                    setSavedPieces(prev => [...prev, ...autoSaved]);
+                    setWorkflow('library');
+                } else {
+                    setDetectedShapes(shapes);
+                    setWorkflow('calibration');
+                    setCurrentPieceIndex(0);
+                    setMeasurements([]);
+                    setCurrentMeasurement({ points: [], label: '', realCm: '' });
+                }
             } else {
                 alert("No pieces detected in the image.");
             }
@@ -427,13 +457,42 @@ const UploadCalibrate = ({ clothConfig, onNext, setShapes: setGlobalShapes }) =>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
                     {workflow === 'upload' && (
-                        <label className="block cursor-pointer group">
-                            <div className="p-12 border-2 border-dashed border-slate-700 rounded-3xl flex flex-col items-center gap-4 group-hover:border-sky-500/50 bg-slate-800/20 transition-all">
-                                <Upload className="w-8 h-8 text-sky-500" />
-                                <span className="text-sm font-bold opacity-60">Upload Pattern Scan</span>
-                                <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                        <div className="space-y-6">
+                            <div className="bg-slate-800/40 p-5 rounded-3xl border border-slate-700/50 space-y-4">
+                                <h3 className="text-[10px] font-black text-sky-400 uppercase tracking-widest">Global Frame Dimensions (Optional)</h3>
+                                <p className="text-[10px] text-slate-500 font-medium italic">Enter the physical size of the whole image to auto-scale all pieces at once.</p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Width (cm)</label>
+                                        <input 
+                                            type="number" 
+                                            value={imgWidthCm}
+                                            onChange={(e) => setImgWidthCm(e.target.value)}
+                                            placeholder="e.g. 100"
+                                            className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-sky-500/50 transition-all"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Height (cm)</label>
+                                        <input 
+                                            type="number" 
+                                            value={imgHeightCm}
+                                            onChange={(e) => setImgHeightCm(e.target.value)}
+                                            placeholder="e.g. 100"
+                                            className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-sky-500/50 transition-all"
+                                        />
+                                    </div>
+                                </div>
                             </div>
-                        </label>
+
+                            <label className="block cursor-pointer group">
+                                <div className="p-12 border-2 border-dashed border-slate-700 rounded-3xl flex flex-col items-center gap-4 group-hover:border-sky-500/50 bg-slate-800/20 transition-all">
+                                    <Upload className="w-8 h-8 text-sky-500" />
+                                    <span className="text-sm font-bold opacity-60">Upload Pattern Scan</span>
+                                    <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                                </div>
+                            </label>
+                        </div>
                     )}
 
                     {workflow === 'calibration' && (
@@ -532,7 +591,15 @@ const UploadCalibrate = ({ clothConfig, onNext, setShapes: setGlobalShapes }) =>
 
                     {workflow === 'library' && (
                         <div className="space-y-4">
-                            <h3 className="text-xs font-black text-slate-400 uppercase">Calibrated Pieces</h3>
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-xs font-black text-slate-400 uppercase">Calibrated Pieces</h3>
+                                <button 
+                                    onClick={() => setSavedPieces([])}
+                                    className="text-[10px] font-bold text-rose-500 hover:bg-rose-500/10 px-3 py-1 rounded-full transition-all"
+                                >
+                                    Clear All
+                                </button>
+                            </div>
                             {savedPieces.map((piece, idx) => (
                                 <div key={piece.id} className="bg-slate-800/40 border border-slate-700/50 p-4 rounded-2xl">
                                     <div className="flex justify-between items-start">
@@ -572,10 +639,17 @@ const UploadCalibrate = ({ clothConfig, onNext, setShapes: setGlobalShapes }) =>
                                         </div>
                                     </div>
                                     <div className="text-[9px] text-slate-500 mt-2">
-                                        {piece.measurements.length} measurements
+                                        {piece.measurements?.[0]?.label || 'Standard'}
                                     </div>
                                 </div>
                             ))}
+
+                            <button
+                                onClick={() => setWorkflow('upload')}
+                                className="w-full bg-slate-800/50 border border-slate-700 hover:border-sky-500/50 py-3 rounded-xl font-bold text-xs uppercase flex items-center justify-center gap-2 transition-all mt-4"
+                            >
+                                <Plus className="w-4 h-4 text-sky-500" /> Add from another scan
+                            </button>
                         </div>
                     )}
                 </div>
