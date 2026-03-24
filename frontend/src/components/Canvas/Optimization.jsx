@@ -180,8 +180,8 @@ const Optimization = ({ clothConfig, shapes, onNext, setLayout }) => {
                 y: offsetY + pt[1] * vScale
             }));
             const mcPoly = new fabric.Polygon(mcPoints, {
-                fill: 'rgba(239, 68, 68, 0.05)',
-                stroke: '#ef4444', // Red 500
+                fill: 'rgba(16, 185, 129, 0.05)',
+                stroke: '#10b981', // Emerald 500
                 strokeWidth: 2,
                 strokeDashArray: [5, 5],
                 selectable: false,
@@ -197,8 +197,8 @@ const Optimization = ({ clothConfig, shapes, onNext, setLayout }) => {
                 left: minX, top: minY,
                 width: data.used_width * vScale,
                 height: data.used_height * vScale,
-                fill: 'rgba(239, 68, 68, 0.02)',
-                stroke: '#ef4444', // Red 500
+                fill: 'rgba(16, 185, 129, 0.02)',
+                stroke: '#10b981', // Emerald 500
                 strokeWidth: 2,
                 strokeDashArray: [5, 5],
                 selectable: false,
