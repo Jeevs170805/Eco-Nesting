@@ -300,6 +300,7 @@ class PolygonNester:
             print(f"Stepped min-cut error, falling back: {e}")
             used_poly = self.fabric_poly.intersection(Polygon([(min_x, min_y), (max_x, min_y), (max_x, max_y), (min_x, max_y)]))
         
+        min_cut_area = used_poly.area
         efficiency = (total_piece_area / min_cut_area * 100) if min_cut_area > 0 else 0
         
         # Convert used_poly to points for the frontend
