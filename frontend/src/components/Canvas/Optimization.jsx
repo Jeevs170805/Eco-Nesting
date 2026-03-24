@@ -173,8 +173,8 @@ const Optimization = ({ clothConfig, shapes, onNext, setLayout, nestingMode }) =
         drawGrid(canvas);
         const { vScale, offsetX, offsetY } = getGridParams();
 
-        // 1. Draw Min-Cut Polygon/Rectangle
-        if (clothConfig.boundaryPoints && data.min_cut_points) {
+        // Draw Min-Cut Polygon if points are available (from backend intersection)
+        if (data.min_cut_points && Array.isArray(data.min_cut_points) && data.min_cut_points.length > 0) {
             const mcPoints = data.min_cut_points.map(pt => ({
                 x: offsetX + pt[0] * vScale,
                 y: offsetY + pt[1] * vScale
@@ -190,7 +190,7 @@ const Optimization = ({ clothConfig, shapes, onNext, setLayout, nestingMode }) =
             });
             canvas.add(mcPoly);
         } else {
-            // Standard rectangle for regular mode
+            // Standard rectangle fallback
             const minX = data.min_x * vScale + offsetX;
             const minY = data.min_y * vScale + offsetY;
             const rect = new fabric.Rect({

@@ -52,23 +52,26 @@ const Export = ({ layout, clothConfig, shapes, onBack, onHome, nestingMode }) =>
             canvas.add(boundary);
         }
 
-        // Render Min-Cut Polygon/Rectangle
-        if (layout.metrics?.minCutPoints) {
+        // Min-Cut Rendering (Prefer Polygon)
+        if (layout.metrics?.minCutPoints && Array.isArray(layout.metrics.minCutPoints) && layout.metrics.minCutPoints.length > 0) {
             const mcPoints = layout.metrics.minCutPoints.map(pt => ({
                 x: offsetX + pt[0] * vScale,
                 y: offsetY + pt[1] * vScale
             }));
-            canvas.add(new fabric.Polygon(mcPoints, {
+            const mcPoly = new fabric.Polygon(mcPoints, {
                 fill: 'rgba(16, 185, 129, 0.05)',
-                stroke: '#10b981', // Green
+                stroke: '#10b981',
                 strokeWidth: 2,
                 strokeDashArray: [5, 5],
-                selectable: false
-            }));
-        } else if (layout.metrics?.usedWidth) {
+                selectable: false,
+                data: { type: 'min-cut' }
+            });
+            canvas.add(mcPoly);
+        } else {
             // Rectangular fallback
+            const minX = (layout.metrics?.minX || 0) * vScale + offsetX;
             canvas.add(new fabric.Rect({
-                left: offsetX,
+                left: minX,
                 top: offsetY,
                 width: layout.metrics.usedWidth * vScale,
                 height: layout.metrics.usedHeight * vScale,
