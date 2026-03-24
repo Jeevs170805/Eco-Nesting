@@ -279,11 +279,17 @@ class PolygonNester:
         used_w = max_x - min_x
         used_h = max_y - min_y
 
-        # Reverting to tight bounding box intersection for minimum area calculation
-        nest_bbox = Polygon([(min_x, min_y), (max_x, min_y), (max_x, max_y), (min_x, max_y)])
-        
-        # Intersection with fabric polygon gives the true "Used" part
-        used_poly = self.fabric_poly.intersection(nest_bbox)
+        # Calculate the Convex Hull of all packed pieces for a tighter Min-Cut
+        try:
+            combined = unary_union([p['poly'] for p in packed])
+            # buffer(0) is a trick to fix minor topological errors
+            tight_poly = combined.convex_hull
+            # Intersection with fabric polygon gives the true "Used" part
+            used_poly = self.fabric_poly.intersection(tight_poly)
+        except Exception as e:
+            # Fallback to bounding box if convex hull fails
+            print(f"Hull calculation error, falling back: {e}")
+            used_poly = self.fabric_poly.intersection(Polygon([(min_x, min_y), (max_x, min_y), (max_x, max_y), (min_x, max_y)]))
         min_cut_area = used_poly.area
         
         efficiency = (total_piece_area / min_cut_area * 100) if min_cut_area > 0 else 0
