@@ -21,88 +21,83 @@ def process_image(image_bytes: bytes):
     # Convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
  
-    # Use Bilateral Filter to remove noise while keeping edges sharp
-    # Better for textures than Gaussian Blur
-    filtered = cv2.bilateralFilter(gray, 9, 75, 75)
+    # PERFORMANCE OPTIMIZATION: Resize for detection if image is massive
+    # Bilateral filtering on 6000x4000 is extremely slow (causes 500/Timeout)
+    MAX_DETECTION_DIM = 1500
+    h, w = gray.shape
+    scale_down = 1.0
+    if max(h, w) > MAX_DETECTION_DIM:
+        scale_down = MAX_DETECTION_DIM / max(h, w)
+        gray_small = cv2.resize(gray, (int(w * scale_down), int(h * scale_down)))
+        img_small = cv2.resize(img, (int(w * scale_down), int(h * scale_down)))
+    else:
+        gray_small = gray
+        img_small = img
  
-    # Use Canny Edge Detection - very robust for clean pattern scans
-    # We use low/high thresholds that detect the brown patterns on white well
+    small_h, small_w = gray_small.shape
+    small_area = small_h * small_w
+ 
+    # Use Bilateral Filter on the resized image (FAST and CLEAN)
+    filtered = cv2.bilateralFilter(gray_small, 9, 75, 75)
     edged = cv2.Canny(filtered, 30, 150)
- 
-    # Dilate edges slightly to close gaps in pattern lines
     kernel = np.ones((3, 3), np.uint8)
     edged = cv2.dilate(edged, kernel, iterations=1)
  
-    # Find contours - RETR_EXTERNAL to get main pieces
-    contours, hierarchy = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    print(f"DEBUG: Found {len(contours)} raw contours")
+    # Find contours
+    contours, _ = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    print(f"DEBUG: Found {len(contours)} raw contours on {small_w}x{small_h} detection buffer")
  
     shapes = []
- 
-    # Balanced filters for high-res scans
-    min_area = img_area * 0.001 # 0.1% of image area
-    max_area = img_area * 0.98
+    # Balanced filters on the detection scale
+    min_area = small_area * 0.001 
+    max_area = small_area * 0.98
  
     for cnt in contours:
-        # Cap logic to prevent 500 errors from noise explosion
-        if len(shapes) > 100:
-            break
+        if len(shapes) > 100: break
  
         area = cv2.contourArea(cnt)
+        if area < min_area or area > max_area: continue
  
-        # 1) Area filter
-        if area < min_area or area > max_area:
-            continue
+        x, y, cw, ch = cv2.boundingRect(cnt)
+        bbox_area = cw * ch
  
-        # 2) Bounding box
-        x, y, w, h = cv2.boundingRect(cnt)
-        bbox_area = w * h
+        aspect = float(cw) / ch if ch > 0 else 0
+        if aspect > 20 or aspect < 0.05: continue
  
-        # 3) Aspect ratio
-        aspect = float(w) / h if h > 0 else 0
-        if aspect > 20 or aspect < 0.05:
-            continue
- 
-        # 4) Extent
         extent = area / bbox_area if bbox_area > 0 else 0
-        if extent < 0.20: 
-            continue
+        if extent < 0.15: continue # Highly curved
  
-        # 5) Solidity
         hull = cv2.convexHull(cnt)
         hull_area = cv2.contourArea(hull)
         solidity = area / hull_area if hull_area > 0 else 0
-        if solidity < 0.4:
-            continue
+        if solidity < 0.3: continue
  
-        # 6) Circularity
         perimeter = cv2.arcLength(cnt, True)
         circularity = (4 * np.pi * area) / (perimeter * perimeter) if perimeter > 0 else 0
-        if circularity < 0.005: 
-            continue
+        if circularity < 0.005: continue
  
-        # 7) Minimum dimensions - 1.5% of image
-        if w < img_w * 0.015 or h < img_h * 0.015:
-            continue
+        # Min dimensions relative to detection size
+        if cw < small_w * 0.01 or ch < small_h * 0.01: continue
  
-        print(f"DEBUG: ACCEPTED - area={area:.0f} ({area/img_area*100:.2f}%), "
-              f"extent={extent:.2f}, solidity={solidity:.2f}, "
-              f"circularity={circularity:.3f}, size={w}x{h}, aspect={aspect:.2f}")
+        print(f"DEBUG: ACCEPTED PIECE {len(shapes)+1} - area={area:.0f}")
  
-        # Return ALL points of the contour for maximum precision (no simplification)
-        points = cnt.reshape(-1, 2).tolist()
-
-        # Extract individual piece image with transparent background
-        piece_image_b64 = extract_piece_image(img, cnt, x, y, w, h)
-
+        # SCALE POINTS BACK TO ORIGINAL RESOLUTION (Preserve 1:1 data)
+        points_orig = (cnt.reshape(-1, 2) / scale_down).tolist()
+ 
+        # Extract small image for UI preview (efficient for transfer)
+        piece_image_b64 = extract_piece_image(img_small, cnt, x, y, cw, ch)
+ 
         shapes.append({
             "id": f"piece_{len(shapes)+1}",
-            "points": points,
-            "area": area,
-            "bbox": {"x": x, "y": y, "w": w, "h": h},
+            "points": points_orig,
+            "area": area / (scale_down ** 2), # Correct area
+            "bbox": {
+                "x": x / scale_down, "y": y / scale_down, 
+                "w": cw / scale_down, "h": ch / scale_down
+            },
             "image": piece_image_b64
         })
-
+ 
     print(f"DEBUG: Final result: {len(shapes)} garment pieces")
     return shapes
 
