@@ -70,8 +70,7 @@ async def root():
 async def upload_image(file: UploadFile = File(...)):
     try:
         contents = await file.read()
-        process_result = await run_in_threadpool(process_image, contents)
-        processed_shapes = process_result["shapes"]
+        processed_shapes = await run_in_threadpool(process_image, contents)
         
         response_shapes = []
         for shape in processed_shapes:
@@ -80,14 +79,10 @@ async def upload_image(file: UploadFile = File(...)):
                 "points": shape["points"],
                 "bbox": shape["bbox"],
                 "pixel_area": shape["area"],
-                "image": shape.get("image")
+                "image": shape.get("image")  # Base64 PNG with transparency
             })
             
-        return {
-            "shapes": response_shapes,
-            "img_w": process_result["width"],
-            "img_h": process_result["height"]
-        }
+        return {"shapes": response_shapes}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -95,12 +90,16 @@ async def upload_image(file: UploadFile = File(...)):
 async def process_fabric(file: UploadFile = File(...)):
     try:
         contents = await file.read()
-        process_result = await run_in_threadpool(process_image, contents)
-        processed = process_result["shapes"]
+        import cv2
+        import numpy as np
+        
+        # Standard processing to find polygons
+        processed = await run_in_threadpool(process_image, contents)
         
         if not processed:
             raise HTTPException(status_code=400, detail="No fabric boundary detected")
             
+        # Use the largest detected shape as the fabric piece
         processed.sort(key=lambda s: s['area'], reverse=True)
         fabric_item = processed[0]
         
@@ -108,9 +107,7 @@ async def process_fabric(file: UploadFile = File(...)):
             "id": fabric_item["id"],
             "points": fabric_item["points"],
             "bbox": fabric_item["bbox"],
-            "image": fabric_item["image"],
-            "img_w": process_result["width"],
-            "img_h": process_result["height"]
+            "image": fabric_item["image"]
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

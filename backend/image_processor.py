@@ -104,11 +104,7 @@ def process_image(image_bytes: bytes):
         })
 
     print(f"DEBUG: Final result: {len(shapes)} garment pieces")
-    return {
-        "shapes": shapes,
-        "width": img_w,
-        "height": img_h
-    }
+    return shapes
 
 
 def extract_piece_image(img, contour, x, y, w, h):
