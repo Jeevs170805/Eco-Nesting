@@ -174,7 +174,7 @@ const Optimization = ({ clothConfig, shapes, onNext, setLayout, nestingMode }) =
         const { vScale, offsetX, offsetY } = getGridParams();
 
         // 1. Draw Min-Cut Marker (Polygon for Irregular, Rectangle for Regular)
-        if (clothConfig.boundaryPoints && data.min_cut_points && data.min_cut_points.length > 0) {
+        if (data.min_cut_points && data.min_cut_points.length > 0) {
             const mcPoints = data.min_cut_points.map(pt => ({
                 x: offsetX + pt[0] * vScale,
                 y: offsetY + pt[1] * vScale

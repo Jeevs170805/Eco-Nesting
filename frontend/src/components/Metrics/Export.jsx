@@ -53,7 +53,7 @@ const Export = ({ layout, clothConfig, shapes, onBack, onHome, nestingMode }) =>
         }
 
         // Min-Cut Rendering (Polygon for Irregular, Rect for Regular)
-        if (clothConfig.boundaryPoints && layout.metrics?.minCutPoints && layout.metrics.minCutPoints.length > 0) {
+        if (layout.metrics?.minCutPoints && layout.metrics.minCutPoints.length > 0) {
             const mcPoints = layout.metrics.minCutPoints.map(pt => ({
                 x: offsetX + pt[0] * vScale,
                 y: offsetY + pt[1] * vScale
