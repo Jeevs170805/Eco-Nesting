@@ -7,7 +7,7 @@ from shapely.ops import unary_union
 import random
 
 class PolygonNester:
-    def __init__(self, fabric_width, fabric_height, gap=0.2, boundary_poly=None):
+    def __init__(self, fabric_width, fabric_height, gap=0.5, boundary_poly=None):
         self.width = fabric_width
         self.height = fabric_height
         self.gap = gap
@@ -279,8 +279,9 @@ class PolygonNester:
         used_w = max_x - min_x
         used_h = max_y - min_y
 
-        # Define the bounding box polygon of the nest
-        nest_bbox = Polygon([(min_x, min_y), (max_x, min_y), (max_x, max_y), (min_x, max_y)])
+        # Redefine the min-cut as the full fabric area up to the rightmost piece
+        minx_f, miny_f, maxx_f, maxy_f = self.fabric_poly.bounds
+        nest_bbox = Polygon([(minx_f, miny_f), (max_x, miny_f), (max_x, maxy_f), (minx_f, maxy_f)])
         
         # Intersection with fabric polygon gives the true "Used" part
         used_poly = self.fabric_poly.intersection(nest_bbox)
@@ -343,7 +344,7 @@ class PolygonNester:
             print(f"Error calculating leftover: {e}")
             return []
 
-def optimize_layout(cloth_width, cloth_height, shapes, gap=0.2, boundary_points=None):
+def optimize_layout(cloth_width, cloth_height, shapes, gap=0.5, boundary_points=None):
     if not shapes:
         return {"results": [], "best_index": -1}
         
