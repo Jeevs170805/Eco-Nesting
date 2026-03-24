@@ -36,16 +36,14 @@ def process_image(image_bytes: bytes):
     contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     print(f"DEBUG: Found {len(contours)} raw contours")
 
-    shapes = []
-
-    # Relaxed filters for smaller pieces and narrow collars
-    min_area = img_area * 0.005  # 0.5% of image area
-    max_area = img_area * 0.95
+    # Aggressively relaxed filters for high-res scans
+    min_area = img_area * 0.0005 # 0.05% of image area (very small pieces)
+    max_area = img_area * 0.98
  
     for cnt in contours:
         area = cv2.contourArea(cnt)
  
-        # 1) Area filter - relaxed
+        # 1) Area filter - very relaxed
         if area < min_area or area > max_area:
             continue
  
@@ -53,31 +51,31 @@ def process_image(image_bytes: bytes):
         x, y, w, h = cv2.boundingRect(cnt)
         bbox_area = w * h
  
-        # 3) Aspect ratio - relaxed for collars
+        # 3) Aspect ratio - relaxed for very narrow collars
         aspect = float(w) / h if h > 0 else 0
-        if aspect > 15 or aspect < 0.06:
+        if aspect > 25 or aspect < 0.04:
             continue
  
-        # 4) Extent: ratio of contour area to bounding box area
+        # 4) Extent
         extent = area / bbox_area if bbox_area > 0 else 0
-        if extent < 0.25: # Relaxed for curved collars
+        if extent < 0.15: # Highly curved shapes
             continue
  
-        # 5) Solidity: ratio of contour area to convex hull area
+        # 5) Solidity
         hull = cv2.convexHull(cnt)
         hull_area = cv2.contourArea(hull)
         solidity = area / hull_area if hull_area > 0 else 0
-        if solidity < 0.4: # Relaxed for concave shapes
+        if solidity < 0.3: # Very concave shapes
             continue
  
-        # 6) Circularity / Compactness
+        # 6) Circularity
         perimeter = cv2.arcLength(cnt, True)
         circularity = (4 * np.pi * area) / (perimeter * perimeter) if perimeter > 0 else 0
-        if circularity < 0.01:
+        if circularity < 0.005: 
             continue
  
-        # 7) Minimum dimensions - relaxed for small pockets/collars
-        if w < img_w * 0.02 or h < img_h * 0.02:
+        # 7) Minimum dimensions - 1% of image
+        if w < img_w * 0.01 or h < img_h * 0.01:
             continue
 
         print(f"DEBUG: ACCEPTED - area={area:.0f} ({area/img_area*100:.1f}%), "
