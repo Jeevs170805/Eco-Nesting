@@ -76,12 +76,12 @@ const Optimization = ({ clothConfig, shapes, onNext, setLayout }) => {
             }));
             const boundary = new fabric.Polygon(boundaryPoints, {
                 fill: 'transparent',
-                stroke: '#475569', // Slate 600
+                stroke: '#eab308', // Yellow 500
                 strokeWidth: 2,
                 strokeDashArray: [10, 5],
                 selectable: false,
                 evented: false,
-                opacity: 0.6
+                opacity: 0.7
             });
             canvas.add(boundary);
         }
