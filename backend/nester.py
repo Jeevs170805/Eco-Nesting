@@ -369,9 +369,14 @@ def optimize_layout(cloth_width, cloth_height, shapes, gap=2, boundary_points=No
     # 7. Genetic Algorithm (Smaller population for speed)
     results.append(nester.pack_genetic_algorithm(shapes, population_size=8, generations=4))
     
-    # Sort by efficiency
-    results.sort(key=lambda x: x['efficiency'], reverse=True)
+    # Sort by completion (all pieces fit) first, then by efficiency
+    # (1, efficiency) > (0, efficiency) -> complete layouts always win
+    results.sort(key=lambda x: (1 if x['packed_count'] == x['total_requested'] else 0, x['efficiency']), reverse=True)
     
+    # Debug log to verify sort order in backend console
+    for r in results:
+        print(f"ALGO: {r['strategy']} | Fit: {r['packed_count']}/{r['total_requested']} | Efficiency: {r['efficiency']}%")
+        
     # Label the best
     if results:
         results[0]['strategy'] = f"🏆 Best: {results[0]['strategy']}"
