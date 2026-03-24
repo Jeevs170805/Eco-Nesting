@@ -38,51 +38,46 @@ def process_image(image_bytes: bytes):
 
     shapes = []
 
-    # Strict minimum: 3% of image area (garment pieces are large)
-    min_area = img_area * 0.03
-    max_area = img_area * 0.90
-
+    # Relaxed filters for smaller pieces and narrow collars
+    min_area = img_area * 0.005  # 0.5% of image area
+    max_area = img_area * 0.95
+ 
     for cnt in contours:
         area = cv2.contourArea(cnt)
-
-        # 1) Area filter - strict
+ 
+        # 1) Area filter - relaxed
         if area < min_area or area > max_area:
             continue
-
+ 
         # 2) Bounding box
         x, y, w, h = cv2.boundingRect(cnt)
         bbox_area = w * h
-
-        # 3) Aspect ratio - exclude very elongated shapes (text lines)
+ 
+        # 3) Aspect ratio - relaxed for collars
         aspect = float(w) / h if h > 0 else 0
-        if aspect > 6 or aspect < 0.16:
+        if aspect > 15 or aspect < 0.06:
             continue
-
+ 
         # 4) Extent: ratio of contour area to bounding box area
-        #    Garment pieces fill their bounding box well (>0.35)
-        #    Text has gaps between letters so extent is low
         extent = area / bbox_area if bbox_area > 0 else 0
-        if extent < 0.35:
+        if extent < 0.25: # Relaxed for curved collars
             continue
-
+ 
         # 5) Solidity: ratio of contour area to convex hull area
-        #    Garment pieces are relatively solid (>0.5)
         hull = cv2.convexHull(cnt)
         hull_area = cv2.contourArea(hull)
         solidity = area / hull_area if hull_area > 0 else 0
-        if solidity < 0.5:
+        if solidity < 0.4: # Relaxed for concave shapes
             continue
-
-        # 6) Circularity / Compactness: 4*pi*area/perimeter^2
-        #    Text has very low circularity (wiggly edges)
-        #    Garment pieces have moderate circularity (>0.05)
+ 
+        # 6) Circularity / Compactness
         perimeter = cv2.arcLength(cnt, True)
         circularity = (4 * np.pi * area) / (perimeter * perimeter) if perimeter > 0 else 0
-        if circularity < 0.02:
+        if circularity < 0.01:
             continue
-
-        # 7) Minimum dimensions - pieces should be reasonably sized
-        if w < img_w * 0.08 or h < img_h * 0.08:
+ 
+        # 7) Minimum dimensions - relaxed for small pockets/collars
+        if w < img_w * 0.02 or h < img_h * 0.02:
             continue
 
         print(f"DEBUG: ACCEPTED - area={area:.0f} ({area/img_area*100:.1f}%), "
