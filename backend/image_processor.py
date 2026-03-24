@@ -20,30 +20,37 @@ def process_image(image_bytes: bytes):
 
     # Convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-    # Use Adaptive Thresholding
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    thresh = cv2.adaptiveThreshold(
-        blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-        cv2.THRESH_BINARY_INV, 11, 2
-    )
-
-    # Light morphological cleaning - DON'T over-dilate (merges text into blobs)
+ 
+    # Use Bilateral Filter to remove noise while keeping edges sharp
+    # Better for textures than Gaussian Blur
+    filtered = cv2.bilateralFilter(gray, 9, 75, 75)
+ 
+    # Use Canny Edge Detection - very robust for clean pattern scans
+    # We use low/high thresholds that detect the brown patterns on white well
+    edged = cv2.Canny(filtered, 30, 150)
+ 
+    # Dilate edges slightly to close gaps in pattern lines
     kernel = np.ones((3, 3), np.uint8)
-    thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=1)
-
-    # Find contours - Use CHAIN_APPROX_NONE to keep ALL points on the curve
-    contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    edged = cv2.dilate(edged, kernel, iterations=1)
+ 
+    # Find contours - RETR_EXTERNAL to get main pieces
+    contours, hierarchy = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     print(f"DEBUG: Found {len(contours)} raw contours")
-
-    # Aggressively relaxed filters for high-res scans
-    min_area = img_area * 0.0005 # 0.05% of image area (very small pieces)
+ 
+    shapes = []
+ 
+    # Balanced filters for high-res scans
+    min_area = img_area * 0.001 # 0.1% of image area
     max_area = img_area * 0.98
  
     for cnt in contours:
+        # Cap logic to prevent 500 errors from noise explosion
+        if len(shapes) > 100:
+            break
+ 
         area = cv2.contourArea(cnt)
  
-        # 1) Area filter - very relaxed
+        # 1) Area filter
         if area < min_area or area > max_area:
             continue
  
@@ -51,21 +58,21 @@ def process_image(image_bytes: bytes):
         x, y, w, h = cv2.boundingRect(cnt)
         bbox_area = w * h
  
-        # 3) Aspect ratio - relaxed for very narrow collars
+        # 3) Aspect ratio
         aspect = float(w) / h if h > 0 else 0
-        if aspect > 25 or aspect < 0.04:
+        if aspect > 20 or aspect < 0.05:
             continue
  
         # 4) Extent
         extent = area / bbox_area if bbox_area > 0 else 0
-        if extent < 0.15: # Highly curved shapes
+        if extent < 0.20: 
             continue
  
         # 5) Solidity
         hull = cv2.convexHull(cnt)
         hull_area = cv2.contourArea(hull)
         solidity = area / hull_area if hull_area > 0 else 0
-        if solidity < 0.3: # Very concave shapes
+        if solidity < 0.4:
             continue
  
         # 6) Circularity
@@ -74,14 +81,14 @@ def process_image(image_bytes: bytes):
         if circularity < 0.005: 
             continue
  
-        # 7) Minimum dimensions - 1% of image
-        if w < img_w * 0.01 or h < img_h * 0.01:
+        # 7) Minimum dimensions - 1.5% of image
+        if w < img_w * 0.015 or h < img_h * 0.015:
             continue
-
-        print(f"DEBUG: ACCEPTED - area={area:.0f} ({area/img_area*100:.1f}%), "
+ 
+        print(f"DEBUG: ACCEPTED - area={area:.0f} ({area/img_area*100:.2f}%), "
               f"extent={extent:.2f}, solidity={solidity:.2f}, "
               f"circularity={circularity:.3f}, size={w}x{h}, aspect={aspect:.2f}")
-
+ 
         # Return ALL points of the contour for maximum precision (no simplification)
         points = cnt.reshape(-1, 2).tolist()
 
