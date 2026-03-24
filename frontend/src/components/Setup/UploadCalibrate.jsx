@@ -237,23 +237,43 @@ const UploadCalibrate = ({ clothConfig, onNext, setShapes: setGlobalShapes }) =>
         // Arrange pieces in a simple grid for the library view
         if (savedPieces.length === 0) return;
 
-        // Calculate total area or dimensions to estimate a better scale
-        const totalW = savedPieces.reduce((sum, p) => sum + p.width + 10, 0);
-        const totalH = savedPieces.reduce((sum, p) => sum + p.height + 15, 0);
+        // 1. Calculate total bounding box of the grid in CM to find displayScale
+        const colGapCm = 10;
+        const rowGapCm = 25;
+        let totalCmW = 0;
+        let totalCmH = 0;
+        let curX = 0;
+        let curY = 0;
+        let curRowH = 0;
 
-        // Dynamic scale to fit: target ~150-200cm total width/height in 800x600 px
-        // If many pieces, scale down more.
-        const displayScale = Math.min(3, 800 / (Math.max(100, totalW / 2)), 600 / (Math.max(100, totalH / 2)));
+        savedPieces.forEach((p, i) => {
+            if (i > 0 && i % 3 === 0) {
+                totalCmW = Math.max(totalCmW, curX);
+                curX = 0;
+                curY += curRowH + rowGapCm;
+                curRowH = 0;
+            }
+            curX += p.width + colGapCm;
+            curRowH = Math.max(curRowH, p.height);
+        });
+        totalCmW = Math.max(totalCmW, curX);
+        totalCmH = curY + curRowH + rowGapCm;
 
-        const offsetX = 40;
-        const offsetY = 40;
+        const displayScale = Math.min(
+            (800 - padding * 2) / Math.max(1, totalCmW),
+            (600 - padding * 2) / Math.max(1, totalCmH),
+            2.0
+        );
+
+        const offsetX = padding;
+        const offsetY = padding;
         const columnGap = 10; // cm
         const rowGap = 25;    // cm (enough for labels)
+        const maxRowWidth = (800 - padding * 2) / displayScale;
 
         let currentX = 0;
         let currentY = 0;
         let maxHeightInRow = 0;
-        const maxRowWidth = (800 - offsetX * 2) / displayScale;
 
         savedPieces.forEach((piece, idx) => {
             if (!piece.cmPoints) return;
