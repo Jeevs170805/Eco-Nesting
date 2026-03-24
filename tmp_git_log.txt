@@ -1,0 +1,10 @@
+f78e76c Integrate size scaling system based on 65x90 baseline
+df524f7 Full implementation of Automated Global Calibration and Size Selection
+53c7c3b Optimize detection with resizing for high-res stability
+0c5ea6c Refactor to Canny Edge Detection and Bilateral Filtering
+ee4690f Aggressively relax detection filters to 0.05% area
+aebfce1 Relax image detection filters for small/narrow pieces
+3c8cc76 Restore Min-Cut visibility in Export and Optimization views for all modes
+e838f52 Revert to point-to-point calibration and fix syntax errors
+2f6c4bf Implement Fit-to-View thumbnail scaling in layout library
+e5efe3c Implement Global Image Calibration refactor (Automatic Scaling)
