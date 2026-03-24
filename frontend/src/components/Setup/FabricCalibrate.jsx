@@ -25,10 +25,40 @@ const FabricCalibrate = ({ onNext }) => {
             const pointer = canvas.getPointer(opt.e);
             setMeasurement(prev => {
                 if (prev.points.length < 2) {
-                    return { ...prev, points: [...prev.points, pointer] };
+                    const newPoints = [...prev.points, pointer];
+                    return { ...prev, points: newPoints };
                 }
                 return prev;
             });
+        });
+
+        canvas.on('object:moving', (e) => {
+            const obj = e.target;
+            if (obj.data?.type === 'point') {
+                const index = obj.data.index;
+                const line = canvas.getObjects().find(o => o.data?.type === 'line');
+                if (line) {
+                    if (index === 0) {
+                        line.set({ x1: obj.left, y1: obj.top });
+                    } else {
+                        line.set({ x2: obj.left, y2: obj.top });
+                    }
+                    canvas.requestRenderAll();
+                }
+            }
+        });
+
+        canvas.on('object:modified', (e) => {
+            const obj = e.target;
+            if (obj.data?.type === 'point') {
+                const index = obj.data.index;
+                const newPos = { x: obj.left, y: obj.top };
+                setMeasurement(prev => {
+                    const nextPoints = [...prev.points];
+                    nextPoints[index] = newPos;
+                    return { ...prev, points: nextPoints };
+                });
+            }
         });
 
         return () => canvas.dispose();
@@ -68,7 +98,8 @@ const FabricCalibrate = ({ onNext }) => {
                 canvas.add(new fabric.Circle({
                     left: p.x, top: p.y, radius: 8, fill: '#f43f5e',
                     stroke: '#fff', strokeWidth: 2, originX: 'center', originY: 'center',
-                    selectable: true, hasControls: false
+                    selectable: true, hasControls: false,
+                    data: { type: 'point', index: idx }
                 }));
             });
 
@@ -77,7 +108,8 @@ const FabricCalibrate = ({ onNext }) => {
                     measurement.points[0].x, measurement.points[0].y,
                     measurement.points[1].x, measurement.points[1].y
                 ], {
-                    stroke: '#f43f5e', strokeWidth: 3, selectable: false, evented: false
+                    stroke: '#f43f5e', strokeWidth: 3, selectable: false, evented: false,
+                    data: { type: 'line' }
                 }));
             }
         } catch (err) {
