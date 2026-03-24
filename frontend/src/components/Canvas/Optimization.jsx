@@ -14,6 +14,7 @@ const Optimization = ({ clothConfig, shapes, onNext, setLayout }) => {
     const [originalPositions, setOriginalPositions] = useState([]);
     const [optimizationResults, setOptimizationResults] = useState([]);
     const [selectedIndex, setSelectedIndex] = useState(-1);
+    const [isUserModified, setIsUserModified] = useState(false);
 
     const canvasRef = useRef(null);
     const fabricCanvasRef = useRef(null);
@@ -38,7 +39,10 @@ const Optimization = ({ clothConfig, shapes, onNext, setLayout }) => {
         fabricCanvasRef.current = canvas;
         drawGrid(canvas);
 
-        const updateMetrics = () => recalcMetrics(canvas);
+        const updateMetrics = () => {
+            setIsUserModified(true);
+            recalcMetrics(canvas);
+        };
         canvas.on('object:moving', updateMetrics);
         canvas.on('object:rotating', updateMetrics);
         canvas.on('object:modified', updateMetrics);
@@ -156,6 +160,7 @@ const Optimization = ({ clothConfig, shapes, onNext, setLayout }) => {
             setSelectedIndex(0);
             renderLayout(results[0]);
             setOptimized(true);
+            setIsUserModified(false);
         } catch (err) {
             const msg = err.response?.data?.detail || err.message || "Unknown error";
             setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
@@ -244,7 +249,7 @@ const Optimization = ({ clothConfig, shapes, onNext, setLayout }) => {
             usedHeight: data.used_height
         });
 
-        recalcMetrics(canvas); // Force initial recalc without skipping
+        recalcMetrics(canvas, data); // Force initial recalc with CURRENT data
         setLayout({
             items: data.packed.map(p => ({
                 ...p,
@@ -260,7 +265,7 @@ const Optimization = ({ clothConfig, shapes, onNext, setLayout }) => {
         });
     };
 
-    const recalcMetrics = (canvas) => {
+    const recalcMetrics = (canvas, forceResult = null) => {
         if (!canvas) return;
         const { vScale, offsetX, offsetY } = getGridParams();
         const shapes = canvas.getObjects().filter(o => o.data?.type === 'shape');
@@ -281,23 +286,28 @@ const Optimization = ({ clothConfig, shapes, onNext, setLayout }) => {
 
         const uwcm = (cluster.maxX - cluster.minX) / vScale;
         const uhcm = (cluster.maxY - cluster.minY) / vScale;
+        
         let mcArea = uwcm * uhcm;
+        let finalEfficiency = 0;
 
-        // If in irregular mode, approximate Min-Cut Area based on Fabric intersection
-        if (clothConfig.boundaryPoints) {
-            // Very crude approx: Intersect current bounding box (CM) with Boundary Poly
-            // For now, if we don't have a library, we'll keep the backend value or use the rectangle
-            // But let's at least mark it correctly.
+        // Sync with backend if the layout hasn't been modified by the user
+        const currentResult = forceResult || optimizationResults[selectedIndex];
+        
+        // If not modified, prioritize backend values for perfect consistency
+        if (currentResult && !isUserModified && !optimizing) {
+            mcArea = currentResult.min_cut_area;
+            finalEfficiency = currentResult.efficiency;
+        } else {
+            // Manual calculation for when pieces are moved
+            finalEfficiency = mcArea > 0 ? (totalArea / mcArea * 100) : 0;
         }
-
-        const eff = mcArea > 0 ? (totalArea / mcArea * 100) : 0;
 
         // Update Metrics State
         setMetrics(prev => ({
             ...prev,
             usedPieceArea: totalArea,
             minRectArea: mcArea,
-            efficiency: eff,
+            efficiency: finalEfficiency,
             wastedArea: Math.max(0, mcArea - totalArea),
             usedWidth: uwcm,
             usedHeight: uhcm

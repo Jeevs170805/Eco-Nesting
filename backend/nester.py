@@ -14,10 +14,9 @@ class PolygonNester:
         self.margin = 0.5 # Default margin for rectangular mode
         
         if boundary_poly:
-            # For irregular mode, we use the provided boundary
-            # We assume it already includes any desired margin from the fabric edge
-            self.fabric_poly = boundary_poly
-            # Update width/height to the boundary's bounds for search range
+            # Irregular mode: use provided boundary with a safety margin (2mm)
+            # This accounts for small scaling/precision differences between frontend and backend.
+            self.fabric_poly = boundary_poly.buffer(-0.2)
             minx, miny, maxx, maxy = boundary_poly.bounds
             self.width = maxx
             self.height = maxy

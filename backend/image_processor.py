@@ -30,10 +30,10 @@ def process_image(image_bytes: bytes):
 
     # Light morphological cleaning - DON'T over-dilate (merges text into blobs)
     kernel = np.ones((3, 3), np.uint8)
-    thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
+    thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=1)
 
-    # Find contours
-    contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # Find contours - Use CHAIN_APPROX_NONE to keep ALL points on the curve
+    contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     print(f"DEBUG: Found {len(contours)} raw contours")
 
     shapes = []
@@ -89,10 +89,8 @@ def process_image(image_bytes: bytes):
               f"extent={extent:.2f}, solidity={solidity:.2f}, "
               f"circularity={circularity:.3f}, size={w}x{h}, aspect={aspect:.2f}")
 
-        # Approximate contour to polygon
-        epsilon = 0.005 * cv2.arcLength(cnt, True)
-        approx = cv2.approxPolyDP(cnt, epsilon, True)
-        points = approx.reshape(-1, 2).tolist()
+        # Return ALL points of the contour for maximum precision (no simplification)
+        points = cnt.reshape(-1, 2).tolist()
 
         # Extract individual piece image with transparent background
         piece_image_b64 = extract_piece_image(img, cnt, x, y, w, h)
