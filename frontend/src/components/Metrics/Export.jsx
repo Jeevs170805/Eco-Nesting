@@ -52,8 +52,8 @@ const Export = ({ layout, clothConfig, shapes, onBack, onHome, nestingMode }) =>
             canvas.add(boundary);
         }
 
-        // Min-Cut Rendering (Prefer Polygon)
-        if (layout.metrics?.minCutPoints && Array.isArray(layout.metrics.minCutPoints) && layout.metrics.minCutPoints.length > 0) {
+        // Min-Cut Rendering (Polygon for Irregular, Rect for Regular)
+        if (clothConfig.boundaryPoints && layout.metrics?.minCutPoints && layout.metrics.minCutPoints.length > 0) {
             const mcPoints = layout.metrics.minCutPoints.map(pt => ({
                 x: offsetX + pt[0] * vScale,
                 y: offsetY + pt[1] * vScale
@@ -67,19 +67,21 @@ const Export = ({ layout, clothConfig, shapes, onBack, onHome, nestingMode }) =>
                 data: { type: 'min-cut' }
             });
             canvas.add(mcPoly);
-        } else {
-            // Rectangular fallback
+        } else if (layout.metrics?.usedWidth) {
+            // Rectangular fallback for regular mode
             const minX = (layout.metrics?.minX || 0) * vScale + offsetX;
+            const minY = (layout.metrics?.minY || 0) * vScale + offsetY;
             canvas.add(new fabric.Rect({
                 left: minX,
-                top: offsetY,
+                top: minY,
                 width: layout.metrics.usedWidth * vScale,
                 height: layout.metrics.usedHeight * vScale,
                 fill: 'rgba(16, 185, 129, 0.05)',
-                stroke: '#10b981', // Green
+                stroke: '#10b981',
                 strokeWidth: 2,
                 strokeDashArray: [5, 5],
-                selectable: false
+                selectable: false,
+                data: { type: 'min-cut' }
             }));
         }
 
