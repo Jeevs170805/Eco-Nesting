@@ -151,7 +151,7 @@ const Optimization = ({ clothConfig, shapes, onNext, setLayout, nestingMode }) =
                 cloth_width: CLOTH_W,
                 cloth_height: CLOTH_H,
                 scale: 1,
-                gap: 0.5,
+                gap: 1.0,
                 shapes: duplicatedShapes,
                 boundary_points: nestingMode === 'irregular' ? clothConfig.boundaryPoints : null
             });
