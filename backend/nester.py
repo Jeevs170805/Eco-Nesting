@@ -279,16 +279,15 @@ class PolygonNester:
         used_w = max_x - min_x
         used_h = max_y - min_y
 
-        # Calculate the Convex Hull of all packed pieces for a tighter Min-Cut
+        # Calculate a Rectilinear (Boxy) Min-Cut using the union of piece envelopes
         try:
-            combined = unary_union([p['poly'] for p in packed])
-            # buffer(0) is a trick to fix minor topological errors
-            tight_poly = combined.convex_hull
-            # Intersection with fabric polygon gives the true "Used" part
-            used_poly = self.fabric_poly.intersection(tight_poly)
+            # Use envelopes to ensure straight horizontal/vertical lines only
+            combined_boxes = unary_union([p['poly'].envelope for p in packed])
+            # Intersection with fabric polygon
+            used_poly = self.fabric_poly.intersection(combined_boxes)
         except Exception as e:
-            # Fallback to bounding box if convex hull fails
-            print(f"Hull calculation error, falling back: {e}")
+            # Fallback to single bounding box
+            print(f"Boxy calculation error, falling back: {e}")
             used_poly = self.fabric_poly.intersection(Polygon([(min_x, min_y), (max_x, min_y), (max_x, max_y), (min_x, max_y)]))
         min_cut_area = used_poly.area
         
