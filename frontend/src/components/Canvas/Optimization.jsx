@@ -3,7 +3,7 @@ import * as fabric from 'fabric';
 import { Play, AlertCircle, Maximize2, Layers, Scissors, ArrowRight } from 'lucide-react';
 import axios from 'axios';
 
-const Optimization = ({ clothConfig, shapes, onNext, setLayout }) => {
+const Optimization = ({ clothConfig, shapes, onNext, setLayout, nestingMode }) => {
     const [optimizing, setOptimizing] = useState(false);
     const [optimized, setOptimized] = useState(false);
     const [metrics, setMetrics] = useState({
@@ -69,7 +69,7 @@ const Optimization = ({ clothConfig, shapes, onNext, setLayout }) => {
         }));
 
         // If in irregular mode, draw the boundary polygon
-        if (clothConfig.boundaryPoints) {
+        if (clothConfig.boundaryPoints && nestingMode === 'irregular') {
             const boundaryPoints = clothConfig.boundaryPoints.map(pt => ({
                 x: offsetX + pt[0] * vScale,
                 y: offsetY + pt[1] * vScale

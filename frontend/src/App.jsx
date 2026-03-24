@@ -16,6 +16,9 @@ function App() {
 
     const handleModeSelect = (mode) => {
         setNestingMode(mode);
+        if (mode === 'regular') {
+            setClothConfig(prev => ({ ...prev, boundaryPoints: null }));
+        }
         setStep(1);
     };
 

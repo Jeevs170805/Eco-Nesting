@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Download, FileJson, CheckCircle, FileText, ChevronLeft, Share2 } from 'lucide-react';
 import * as fabric from 'fabric';
 
-const Export = ({ layout, clothConfig, shapes, onBack, onHome }) => {
+const Export = ({ layout, clothConfig, shapes, onBack, onHome, nestingMode }) => {
     const canvasRef = useRef(null);
     const [stats, setStats] = useState({ efficiency: 0, usedArea: 0 });
 
@@ -37,7 +37,7 @@ const Export = ({ layout, clothConfig, shapes, onBack, onHome }) => {
         }));
 
         // If in irregular mode, draw the boundary polygon
-        if (clothConfig.boundaryPoints) {
+        if (clothConfig.boundaryPoints && nestingMode === 'irregular') {
             const boundaryPoints = clothConfig.boundaryPoints.map(pt => ({
                 x: offsetX + pt[0] * vScale,
                 y: offsetY + pt[1] * vScale
